@@ -1,0 +1,14 @@
+package util
+
+import(
+	"fmt"
+	"os"
+)
+
+func CheckError(err error){
+	if err != nil {
+		fmt.Pritnln("Error = ",err)
+		os.Exit(1)
+	}
+}
+
