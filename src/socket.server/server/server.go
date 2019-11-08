@@ -92,28 +92,28 @@ func handleFire(conn net.Conn ,data []byte){
 	fireBack.Y = 200.0
 	fireBack.Z = 300.0
 	fireBack.ProtoName ="MsgFireGo"
-	msgData , err := json.Marshal(&fireBack)
-	if err == nil {
-		protoName := "MsgFireGo"
-		nameByte := []byte(protoName)
-		nameLen := len(nameByte)
-		dataLen := len(msgData)
-		totalLen := nameLen + dataLen +2
-		sendData := make([]byte,4)
-		util.WriteUint16(sendData[0:2],uint16(totalLen))
-		util.WriteUint16(sendData[2:4],uint16(nameLen))
-		sendData = append(sendData,nameByte...)
-		sendData = append(sendData,msgData...)
-		sendN , err := sendMsg(conn,sendData)
-		if err !=nil {
-			fmt.Println("send error" ,err)
-		}else{
-			fmt.Println("Send num = " , sendN)
-		}
-
-	}else{
-		fmt.Println("error " , err)
+	sendData := generateMsgBytes("MsgFireGo",&fireBack)
+	if sendData != nil {
+		sendMsg(conn,sendData)
 	}
+}
+
+func generateMsgBytes(name string, proto interface{}) []byte{
+	protoName := name
+	nameByte := []byte(protoName)
+	nameLen := uint16(len(nameByte))
+	protoData , err:= json.Marshal(proto)
+	if err != nil{
+		return nil
+	}
+	protoLen := uint16(len(protoData))
+	totalLen := nameLen + protoLen + uint16(msgLenSize)	
+	sendData := make([]byte,int(msgLenSize)+ int(protoLenSize) + int(nameLen) + int(protoLen))
+	util.WriteUint16(sendData[0:msgLenSize],uint16(totalLen))
+	util.WriteUint16(sendData[msgLenSize:msgLenSize + protoLenSize],uint16(nameLen))
+	copy(sendData[int(msgLenSize)+int(protoLenSize):int(msgLenSize)+int(protoLenSize)+int(nameLen)],nameByte)
+	copy(sendData[int(msgLenSize)+int(protoLenSize)+int(nameLen):int(msgLenSize)+int(protoLenSize)+int(nameLen) + int(protoLen)],protoData)
+	return sendData
 }
 
 func sendMsg(conn net.Conn , data []byte)(int,error){
@@ -121,6 +121,7 @@ func sendMsg(conn net.Conn , data []byte)(int,error){
 	n ,err := conn.Write(data)
 	return n ,err
 }
+
 
 
 
